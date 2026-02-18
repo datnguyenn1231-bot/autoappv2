@@ -1,0 +1,125 @@
+[2026-02-09 19:32:15.052146] SK3-A: Entered process_image_flow
+[2026-02-09 19:32:15.053181] SK3-B: faulthandler enabled
+[2026-02-09 19:32:15.053181] SK3-C: Before STOP_FLAG=False
+[2026-02-09 19:32:15.053181] SK3-D: Before _ensure_out_dirs
+[2026-02-09 19:32:15.053181] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 19:32:15.054181] SK3-F: debug log initialized
+[2026-02-09 19:32:15.054181] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 19:32:15.058316] SK3-H: Got 113 files from image dir
+[2026-02-09 19:32:15.058316] SK3-I: Before ffprobe loop
+[2026-02-09 19:32:15.058316] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 19:32:16.428031] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 19:32:16.428031] SK3-J: Before aspect ratio detection
+[2026-02-09 19:32:16.502223] SK3-K: Before AI transcription
+[2026-02-09 19:40:19.050661] SK3-A: Entered process_image_flow
+[2026-02-09 19:40:19.050661] SK3-B: faulthandler enabled
+[2026-02-09 19:40:19.050661] SK3-C: Before STOP_FLAG=False
+[2026-02-09 19:40:19.050661] SK3-D: Before _ensure_out_dirs
+[2026-02-09 19:40:19.052167] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 19:40:19.052167] SK3-F: debug log initialized
+[2026-02-09 19:40:19.052167] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 19:40:19.053189] SK3-H: Got 113 files from image dir
+[2026-02-09 19:40:19.053189] SK3-I: Before ffprobe loop
+[2026-02-09 19:40:19.053189] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 19:40:19.128992] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 19:40:19.128992] SK3-J: Before aspect ratio detection
+[2026-02-09 19:40:19.194476] SK3-K: Before AI transcription
+[2026-02-09 19:53:50.785631] SK3-A: Entered process_image_flow
+[2026-02-09 19:53:50.785631] SK3-B: faulthandler enabled
+[2026-02-09 19:53:50.786657] SK3-C: Before STOP_FLAG=False
+[2026-02-09 19:53:50.786657] SK3-D: Before _ensure_out_dirs
+[2026-02-09 19:53:50.786657] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 19:53:50.786657] SK3-F: debug log initialized
+[2026-02-09 19:53:50.786657] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 19:53:50.788264] SK3-H: Got 113 files from image dir
+[2026-02-09 19:53:50.788264] SK3-I: Before ffprobe loop
+[2026-02-09 19:53:50.788264] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 19:53:50.855201] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 19:53:50.855201] SK3-J: Before aspect ratio detection
+[2026-02-09 19:53:50.918651] SK3-K: Before AI transcription
+[2026-02-09 20:03:29.990064] SK3-A: Entered process_image_flow
+[2026-02-09 20:03:29.990064] SK3-B: faulthandler enabled
+[2026-02-09 20:03:29.991075] SK3-C: Before STOP_FLAG=False
+[2026-02-09 20:03:29.991075] SK3-D: Before _ensure_out_dirs
+[2026-02-09 20:03:29.992581] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 20:03:29.993586] SK3-F: debug log initialized
+[2026-02-09 20:03:29.993586] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 20:03:29.994266] SK3-H: Got 113 files from image dir
+[2026-02-09 20:03:29.994266] SK3-I: Before ffprobe loop
+[2026-02-09 20:03:29.994778] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 20:03:30.062318] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 20:03:30.062318] SK3-J: Before aspect ratio detection
+[2026-02-09 20:03:30.125279] SK3-K: Before AI transcription
+[2026-02-09 20:22:38.990821] SK3-A: Entered process_image_flow
+[2026-02-09 20:22:38.990821] SK3-B: faulthandler enabled
+[2026-02-09 20:22:38.991821] SK3-C: Before STOP_FLAG=False
+[2026-02-09 20:22:38.991821] SK3-D: Before _ensure_out_dirs
+[2026-02-09 20:22:38.991821] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 20:22:38.991821] SK3-F: debug log initialized
+[2026-02-09 20:22:38.993324] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 20:22:38.993324] SK3-H: Got 113 files from image dir
+[2026-02-09 20:22:38.993324] SK3-I: Before ffprobe loop
+[2026-02-09 20:22:38.993324] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 20:22:39.063084] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 20:22:39.063084] SK3-J: Before aspect ratio detection
+[2026-02-09 20:22:39.128939] SK3-K: Before AI transcription
+[2026-02-09 20:29:31.951365] SK3-A: Entered process_image_flow
+[2026-02-09 20:29:31.951365] SK3-B: faulthandler enabled
+[2026-02-09 20:29:31.952365] SK3-C: Before STOP_FLAG=False
+[2026-02-09 20:29:31.952365] SK3-D: Before _ensure_out_dirs
+[2026-02-09 20:29:31.953751] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\output\audios
+[2026-02-09 20:29:31.954454] SK3-F: debug log initialized
+[2026-02-09 20:29:31.954454] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 20:29:31.955461] SK3-H: Got 113 files from image dir
+[2026-02-09 20:29:31.955461] SK3-I: Before ffprobe loop
+[2026-02-09 20:29:31.955461] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 20:29:32.021110] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 20:29:32.022616] SK3-J: Before aspect ratio detection
+[2026-02-09 20:29:32.087989] SK3-K: Before AI transcription
+[2026-02-09 20:58:42.785320] SK3-A: Entered process_image_flow
+[2026-02-09 20:58:42.785320] SK3-B: faulthandler enabled
+[2026-02-09 20:58:42.785320] SK3-C: Before STOP_FLAG=False
+[2026-02-09 20:58:42.785320] SK3-D: Before _ensure_out_dirs
+[2026-02-09 20:58:42.786899] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\testanh\audios
+[2026-02-09 20:58:42.786899] SK3-F: debug log initialized
+[2026-02-09 20:58:42.787905] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 20:58:42.787905] SK3-H: Got 113 files from image dir
+[2026-02-09 20:58:42.788410] SK3-I: Before ffprobe loop
+[2026-02-09 20:58:42.788410] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 20:58:42.852299] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 20:58:42.852299] SK3-J: Before aspect ratio detection
+[2026-02-09 20:58:42.916501] SK3-K: Before AI transcription
+[2026-02-09 21:36:50.985487] SK3-A: Entered process_image_flow
+[2026-02-09 21:36:50.985991] SK3-B: faulthandler enabled
+[2026-02-09 21:36:50.985991] SK3-C: Before STOP_FLAG=False
+[2026-02-09 21:36:50.985991] SK3-D: Before _ensure_out_dirs
+[2026-02-09 21:37:09.264449] SK3-A: Entered process_image_flow
+[2026-02-09 21:37:09.264449] SK3-B: faulthandler enabled
+[2026-02-09 21:37:09.264449] SK3-C: Before STOP_FLAG=False
+[2026-02-09 21:37:09.264449] SK3-D: Before _ensure_out_dirs
+[2026-02-09 21:42:23.328948] SK3-A: Entered process_image_flow
+[2026-02-09 21:42:23.329929] SK3-B: faulthandler enabled
+[2026-02-09 21:42:23.329929] SK3-C: Before STOP_FLAG=False
+[2026-02-09 21:42:23.329929] SK3-D: Before _ensure_out_dirs
+[2026-02-09 21:42:23.331869] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\test anh\audios
+[2026-02-09 21:42:23.331869] SK3-F: debug log initialized
+[2026-02-09 21:42:23.331869] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 21:42:23.332903] SK3-H: Got 113 files from image dir
+[2026-02-09 21:42:23.333409] SK3-I: Before ffprobe loop
+[2026-02-09 21:42:23.333409] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 21:42:24.577993] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 21:42:24.577993] SK3-J: Before aspect ratio detection
+[2026-02-09 21:42:24.646671] SK3-K: Before AI transcription
+[2026-02-09 21:57:11.283637] SK3-A: Entered process_image_flow
+[2026-02-09 21:57:11.283637] SK3-B: faulthandler enabled
+[2026-02-09 21:57:11.283637] SK3-C: Before STOP_FLAG=False
+[2026-02-09 21:57:11.283637] SK3-D: Before _ensure_out_dirs
+[2026-02-09 21:57:11.285363] SK3-E: out_dirs OK: C:\Users\datng\Videos\VU AN KENJJ\tap 1 bong bong ai\audios
+[2026-02-09 21:57:11.285363] SK3-F: debug log initialized
+[2026-02-09 21:57:11.285363] SK3-G: Before _list_visual_files_recursive
+[2026-02-09 21:57:11.286970] SK3-H: Got 113 files from image dir
+[2026-02-09 21:57:11.286970] SK3-I: Before ffprobe loop
+[2026-02-09 21:57:11.287484] SK3-I-0: ffprobe checking: 1.jfif
+[2026-02-09 21:57:12.658153] SK3-I-0: FOUND valid file at index 0
+[2026-02-09 21:57:12.659162] SK3-J: Before aspect ratio detection
+[2026-02-09 21:57:12.717943] SK3-K: Before AI transcription
