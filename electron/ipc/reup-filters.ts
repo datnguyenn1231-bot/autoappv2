@@ -231,7 +231,7 @@ export function buildFilterChain(config: ReupConfig): {
             .replace(/'/g, "\\'")
             .replace(/,/g, '\\,')
             .replace(/%/g, '%%')
-        const fontPath = 'C\\\\:/Windows/Fonts/arialbd.ttf'
+        const fontPath = 'C\\:/Windows/Fonts/arialbd.ttf'
 
         if (config.titleText) {
             vFilters.push(
@@ -245,20 +245,19 @@ export function buildFilterChain(config: ReupConfig): {
         }
     }
 
-    // Subtitle burn-in — Windows path cần escape đặc biệt cho FFmpeg subtitles filter
-    // FFmpeg subtitles muốn: C\\:/Users/... (double backslash trước colon)
+    // Subtitle burn-in — FFmpeg subtitles filter path escaping:
+    // Windows: C:\Users\... → replace \ with / → C:/Users/...
+    // Escape ':' with '\:' → C\:/Users/... (FFmpeg hiểu \: = literal colon)
+    // ĐÚNG: C\:/path  (single backslash trước colon = escaped colon trong FFmpeg)
+    // SAI:  C\\:/path (double backslash = literal backslash + bare colon)
     if (config.srtPath) {
         const srtEscaped = config.srtPath
-            .replace(/\\/g, '/')          // backslash → forward slash
+            .replace(/\\/g, '/')
+            .replace(/:/g, '\\:')
             .replace(/'/g, "\\'")
             .replace(/\[/g, '\\[')
             .replace(/\]/g, '\\]')
-            .replace(/:/g, '\\:')         // escape colon SAU khi đã xử lý backslash
-        // Kết quả: C\:/Users/... → cần thêm 1 backslash nữa cho drive letter
-        // FFmpeg subtitles cần C\\:/path, nhưng .replace đã cho C\:/path
-        // Sửa: thay thế drive letter pattern X\: → X\\:
-        const srtFinal = srtEscaped.replace(/^([A-Za-z])\\:/, '$1\\\\:')
-        vFilters.push(`subtitles='${srtFinal}'`)
+        vFilters.push(`subtitles='${srtEscaped}'`)
     }
 
     // Always ensure yuv420p
@@ -297,8 +296,8 @@ export function buildFilterChain(config: ReupConfig): {
         extraInputs.push(config.logoPath!)
         const pct = (config.logoSize || 12) / 100
         const pos = getLogoOverlayPos(config.logoPosition || 'bottom-right')
-        // Complex filter: apply all vf to [0:v], scale logo, overlay
-        complexFilter = `[0:v]${vfStr}[base];[1:v]scale=iw*${pct.toFixed(2)}:-1:flags=lanczos,format=rgba[logo];[base][logo]overlay=${pos}`
+        // Complex filter: apply all vf to [0:v], scale logo, overlay → output [v]
+        complexFilter = `[0:v]${vfStr}[base];[1:v]scale=iw*${pct.toFixed(2)}:-1:flags=lanczos,format=rgba[logo];[base][logo]overlay=${pos}[v]`
     }
 
     return {

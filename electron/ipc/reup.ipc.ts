@@ -487,13 +487,20 @@ export function registerReupIPC(): void {
             }
         }
 
-        // FFmpeg path
+        // FFmpeg fallback path
+        // KHÔNG dùng -hwaccel_output_format nv12! Nó giữ frames trên GPU nv12 format
+        // → subtitles, colorchannelmixer, overlay... KHÔNG chạy được trên GPU frames
+        // Chỉ dùng -hwaccel cuda (auto download frames về CPU cho software filters)
         const args: string[] = ['-y']
-        if (useGpu) args.push('-hwaccel', 'cuda', '-hwaccel_output_format', 'nv12')
+        if (useGpu) args.push('-hwaccel', 'cuda')
         args.push('-i', chunkPath)
         for (const inp of extraInputs) args.push('-i', inp)
         if (complexFilter) {
             args.push('-filter_complex', complexFilter)
+            // Khi dùng filter_complex, cần -map để chọn output streams
+            // Video: lấy từ overlay output (cuối cùng trong filtergraph, không có label)
+            // Audio: lấy từ input [0:a]
+            args.push('-map', '[v]', '-map', '0:a?')
         } else if (vf) {
             args.push('-vf', vf)
         }
