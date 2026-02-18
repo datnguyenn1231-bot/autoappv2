@@ -50,18 +50,21 @@ export function isNVEncCAvailable(): boolean {
 /**
  * Check if NVEncC can handle this config.
  * With libplacebo shaders, NVEncC handles nearly ALL visual filters.
- * Only speed change forces FFmpeg (requires setpts/atempo).
+ * Speed change: NVEncC render bình thường → FFmpeg setpts/atempo sau (nhanh hơn)
  */
 export function canUseNVEncC(config: ReupConfig): boolean {
-    // Speed change needs FFmpeg setpts + atempo — can't do on NVEncC
-    if (config.speed !== 1.0) return false
-
-    // Title overlay needs pre-render to PNG — handled externally but
-    // the overlay itself can use --vpp-overlay. Allow it.
-    // Logo overlay → --vpp-overlay. Allow it.
-    // All other visual filters → libplacebo shaders. Allow them.
-
+    // NVEncC xử lý TẤT CẢ visual filters qua libplacebo shaders
+    // Speed change sẽ được xử lý riêng bằng FFmpeg sau khi NVEncC render xong
+    // → Cho phép NVEncC luôn!
     return true
+}
+
+/**
+ * Check if speed post-processing is needed.
+ * Khi speed ≠ 1.0, sau NVEncC render → FFmpeg setpts + atempo (rất nhanh với NVENC)
+ */
+export function needsSpeedPostProcess(config: ReupConfig): boolean {
+    return config.speed !== 1.0
 }
 
 /**

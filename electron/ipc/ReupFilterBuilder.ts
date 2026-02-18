@@ -46,21 +46,37 @@ export class ReupFilterBuilder {
         this.aFilters = []
         this.extraInputs = []
 
-        // ─── VIDEO FILTERS (thứ tự quan trọng) ───
+        // ─── VIDEO FILTERS — THỨ TỰ CỰC KỲ QUAN TRỌNG ───
+        // 1. Geometry changes (mirror, crop)
         this.addMirror()
         this.addSmartCrop()
+
+        // 2. Pixel-level modifications (không thay đổi kích thước)
         this.addNoise()
         this.addRotate()
         this.addLensDistortion()
+
+        // 3. Color modifications (không thay đổi kích thước)
         this.addHDR()
         this.addColorGrading()
         this.addGlow()
-        this.addZoomEffect()
-        this.addBorder()
-        this.addFrameTemplate()
+
+        // 4. Anti-detect pixel tricks (phải ĐẶT TRƯỚC frame template!)
         this.addPixelEnlarge()
         this.addRGBDrift()
         this.addChromaShuffle()
+
+        // 5. Zoom effect (trước frame template để frame template set kích thước cuối)
+        this.addZoomEffect()
+
+        // 6. Frame Template (scale về kích thước target, VD: 1080x1920)
+        //    PHẢI ĐẶT SAU tất cả filter thay đổi pixel, TRƯỚC border
+        this.addFrameTemplate()
+
+        // 7. Border (viền — thêm padding SAU khi đã scale về target size)
+        this.addBorder()
+
+        // 8. Overlays (text/sub — đặt sau khi kích thước đã cố định)
         this.addTitle()
         this.addSubtitle()
 

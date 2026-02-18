@@ -12,7 +12,7 @@ import os from 'node:os'
 import { getFFmpegPath, getFFprobePath } from './ffmpeg.ipc.js'
 import { buildFilterChain, type FilterResult } from './ReupFilterBuilder.js'
 import type { ReupConfig } from './reup-filters.js'
-import { getNVEncCPath, isNVEncCAvailable, canUseNVEncC, buildNVEncCArgs, needsSeparateAudio } from './nvenc-builder.js'
+import { getNVEncCPath, isNVEncCAvailable, canUseNVEncC, buildNVEncCArgs, needsSeparateAudio, needsSpeedPostProcess } from './nvenc-builder.js'
 
 // ── Constants ──
 const VIDEO_EXTS = ['.mp4', '.mov', '.mkv', '.avi', '.webm', '.m4v']
@@ -121,6 +121,21 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
                 const nvArgs = buildNVEncCArgs(config, inputPath, outPath)
                 await runNVEnc(nvArgs)
             }
+
+            // Speed post-processing: NVEncC đã render video → FFmpeg chỉ setpts + atempo (nhanh)
+            if (needsSpeedPostProcess(config)) {
+                const tmpSpeed = path.join(outputDir, `${basename}_tmpspeed.mp4`)
+                fs.renameSync(outPath, tmpSpeed)
+                const speedArgs = ['-y', '-i', tmpSpeed,
+                    '-vf', `setpts=PTS/${config.speed.toFixed(3)}`,
+                    '-af', `atempo=${config.speed.toFixed(3)}`,
+                    '-c:v', 'h264_nvenc', '-preset', 'p1', '-cq', '23',
+                    '-c:a', 'aac', '-b:a', '192k',
+                    '-movflags', '+faststart', outPath]
+                await runFF(speedArgs)
+                try { fs.unlinkSync(tmpSpeed) } catch { /* */ }
+            }
+
             return outPath
         } catch {
             // NVEncC failed — fallback to FFmpeg below
@@ -485,6 +500,21 @@ export function registerReupIPC(): void {
                     const nvArgs = buildNVEncCArgs(config, chunkPath, outPath)
                     await runNVEnc(nvArgs)
                 }
+
+                // Speed post-processing: NVEncC đã render → FFmpeg setpts + atempo (nhanh với NVENC)
+                if (needsSpeedPostProcess(config)) {
+                    const tmpSpeed = outPath.replace('.mp4', '_tmpspd.mp4')
+                    fs.renameSync(outPath, tmpSpeed)
+                    const speedArgs = ['-y', '-i', tmpSpeed,
+                        '-vf', `setpts=PTS/${config.speed.toFixed(3)}`,
+                        '-af', `atempo=${config.speed.toFixed(3)}`,
+                        '-c:v', 'h264_nvenc', '-preset', 'p1', '-cq', '23',
+                        '-c:a', 'aac', '-b:a', '192k',
+                        '-movflags', '+faststart', outPath]
+                    await runFF(speedArgs)
+                    try { fs.unlinkSync(tmpSpeed) } catch { /* */ }
+                }
+
                 return
             } catch {
                 // NVEncC failed — fallback to FFmpeg
