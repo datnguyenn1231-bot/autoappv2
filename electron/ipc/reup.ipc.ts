@@ -10,7 +10,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 
 import { getFFmpegPath, getFFprobePath } from './ffmpeg.ipc.js'
-import { buildFilterChain, type ReupConfig } from './reup-filters.js'
+import { buildFilterChain, type FilterResult } from './ReupFilterBuilder.js'
+import type { ReupConfig } from './reup-filters.js'
 import { getNVEncCPath, isNVEncCAvailable, canUseNVEncC, buildNVEncCArgs, needsSeparateAudio } from './nvenc-builder.js'
 
 // ── Constants ──
@@ -126,12 +127,14 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
         }
     }
 
-    // FFmpeg path (with all filters)
-    const { vf, af, complexFilter, extraInputs } = buildFilterChain(config)
+    // FFmpeg path (dùng ReupFilterBuilder)
+    const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
     const args: string[] = ['-y', '-i', inputPath]
     for (const inp of extraInputs) args.push('-i', inp)
     if (complexFilter) {
         args.push('-filter_complex', complexFilter)
+        // filter_complex cần -map để chọn output stream
+        if (needsMapping) args.push('-map', '[v]', '-map', '0:a?')
     } else if (vf) {
         args.push('-vf', vf)
     }
@@ -448,7 +451,8 @@ export function registerReupIPC(): void {
     async function encodeChunk(
         chunkPath: string, outPath: string,
         vf: string, af: string, complexFilter: string, extraInputs: string[],
-        config: ReupConfig, useGpu: boolean, useNVEncC: boolean
+        config: ReupConfig, useGpu: boolean, useNVEncC: boolean,
+        needsMapping: boolean = false
     ): Promise<void> {
         // Try NVEncC + libplacebo shaders (full GPU pipeline, 10-15x faster)
         if (useNVEncC) {
@@ -497,10 +501,8 @@ export function registerReupIPC(): void {
         for (const inp of extraInputs) args.push('-i', inp)
         if (complexFilter) {
             args.push('-filter_complex', complexFilter)
-            // Khi dùng filter_complex, cần -map để chọn output streams
-            // Video: lấy từ overlay output (cuối cùng trong filtergraph, không có label)
-            // Audio: lấy từ input [0:a]
-            args.push('-map', '[v]', '-map', '0:a?')
+            // filter_complex cần -map để chọn output stream (logo overlay → [v])
+            if (needsMapping) args.push('-map', '[v]', '-map', '0:a?')
         } else if (vf) {
             args.push('-vf', vf)
         }
@@ -553,7 +555,7 @@ export function registerReupIPC(): void {
             const useNVEncC = useGpu && isNVEncCAvailable() && canUseNVEncC(config)
             const encoderLabel = useNVEncC ? '⚡ NVEncC (full GPU)' : (useGpu ? '🚀 FFmpeg+NVENC' : '💻 FFmpeg CPU')
             log(win, `${encoderLabel} — Encoding ${chunkPaths.length} chunks × ${MAX_PARALLEL} parallel...`)
-            const { vf, af, complexFilter, extraInputs } = buildFilterChain(config)
+            const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
             const encodedPaths: string[] = []
             const queue = [...chunkPaths]
             let doneCount = 0
@@ -565,7 +567,7 @@ export function registerReupIPC(): void {
                     const encodedFile = path.join(tmpDir, `enc_${String(idx).padStart(4, '0')}.mp4`)
                     encodedPaths[idx] = encodedFile
 
-                    await encodeChunk(chunk, encodedFile, vf, af, complexFilter, extraInputs, config, useGpu, useNVEncC)
+                    await encodeChunk(chunk, encodedFile, vf, af, complexFilter, extraInputs, config, useGpu, useNVEncC, needsMapping)
                     doneCount++
                     log(win, `  [${doneCount}/${chunkPaths.length}] ✅ chunk ${idx + 1}`)
                 }
