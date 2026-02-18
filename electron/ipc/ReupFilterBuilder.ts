@@ -187,7 +187,7 @@ export class ReupFilterBuilder {
         const z = this.config.zoomIntensity
         if (this.config.zoomEffect && z && z > 1.0) {
             this.vFilters.push(
-                `zoompan=z='min(zoom+0.0005,${z.toFixed(3)})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=iw*2xih*2:fps=30`
+                `zoompan=z='min(zoom+0.0005,${z.toFixed(3)})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:fps=30`
             )
             this.vFilters.push('scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos')
         }
