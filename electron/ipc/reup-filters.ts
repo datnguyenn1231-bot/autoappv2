@@ -167,12 +167,11 @@ export function buildFilterChain(config: ReupConfig): {
         if (cgFilter) vFilters.push(cgFilter)
     }
 
-    // Glow/Bloom
+    // Glow/Bloom — dùng unsharp thay vì split/blend (split/blend cần filter_complex)
     if (config.glow) {
         vFilters.push(
-            'split[main][glow]',
-            '[glow]gblur=sigma=3.5[blurred]',
-            '[main][blurred]blend=all_mode=screen:all_opacity=0.18'
+            'eq=brightness=0.06:contrast=1.05',
+            'unsharp=9:9:1.2:9:9:0.0'
         )
     }
 
@@ -232,7 +231,7 @@ export function buildFilterChain(config: ReupConfig): {
             .replace(/'/g, "\\'")
             .replace(/,/g, '\\,')
             .replace(/%/g, '%%')
-        const fontPath = 'C\\:/Windows/Fonts/arialbd.ttf'
+        const fontPath = 'C\\\\:/Windows/Fonts/arialbd.ttf'
 
         if (config.titleText) {
             vFilters.push(
@@ -246,15 +245,20 @@ export function buildFilterChain(config: ReupConfig): {
         }
     }
 
-    // Subtitle burn-in
+    // Subtitle burn-in — Windows path cần escape đặc biệt cho FFmpeg subtitles filter
+    // FFmpeg subtitles muốn: C\\:/Users/... (double backslash trước colon)
     if (config.srtPath) {
         const srtEscaped = config.srtPath
-            .replace(/\\/g, '/')
-            .replace(/:/g, '\\:')
+            .replace(/\\/g, '/')          // backslash → forward slash
             .replace(/'/g, "\\'")
             .replace(/\[/g, '\\[')
             .replace(/\]/g, '\\]')
-        vFilters.push(`subtitles='${srtEscaped}'`)
+            .replace(/:/g, '\\:')         // escape colon SAU khi đã xử lý backslash
+        // Kết quả: C\:/Users/... → cần thêm 1 backslash nữa cho drive letter
+        // FFmpeg subtitles cần C\\:/path, nhưng .replace đã cho C\:/path
+        // Sửa: thay thế drive letter pattern X\: → X\\:
+        const srtFinal = srtEscaped.replace(/^([A-Za-z])\\:/, '$1\\\\:')
+        vFilters.push(`subtitles='${srtFinal}'`)
     }
 
     // Always ensure yuv420p
