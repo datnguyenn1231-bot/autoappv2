@@ -10,8 +10,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 
 import { getFFmpegPath, getFFprobePath } from './ffmpeg.ipc.js'
-import { buildFilterChain, type FilterResult } from './ReupFilterBuilder.js'
-import type { ReupConfig } from './reup-filters.js'
+import { buildFilterChain, type ReupConfig } from './reup-filters.js'
 import { getNVEncCPath, isNVEncCAvailable, canUseNVEncC, buildNVEncCArgs, needsSeparateAudio, needsSpeedPostProcess } from './nvenc-builder.js'
 
 // ── Constants ──

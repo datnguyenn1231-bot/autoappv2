@@ -115,6 +115,7 @@ export function buildFilterChain(config: ReupConfig): {
     af: string
     complexFilter: string
     extraInputs: string[]
+    needsMapping: boolean
 } {
     const vFilters: string[] = []
     const aFilters: string[] = []
@@ -305,6 +306,7 @@ export function buildFilterChain(config: ReupConfig): {
         af: aFilters.length > 0 ? aFilters.join(',') : '',
         complexFilter,
         extraInputs,
+        needsMapping: hasLogo,
     }
 }
 
