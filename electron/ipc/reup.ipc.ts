@@ -620,6 +620,26 @@ export function registerReupIPC(): void {
             const encoderLabel = useNVEncC ? '⚡ NVEncC (full GPU)' : (useGpu ? '🚀 FFmpeg+NVENC' : '💻 FFmpeg CPU')
             log(win, `${encoderLabel} — Encoding ${chunkPaths.length} chunks × ${MAX_PARALLEL} parallel...`)
             const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
+
+            // ─── DEBUG: Ghi file debug ra Desktop ───
+            const debugPath = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
+            try {
+                fs.writeFileSync(debugPath, [
+                    '═══ REUP DEBUG: fastExport ═══',
+                    `Time: ${new Date().toISOString()}`,
+                    `useGpu: ${useGpu}`,
+                    `useNVEncC: ${useNVEncC}`,
+                    `Chunks: ${chunkPaths.length}`,
+                    '',
+                    'CONFIG:', JSON.stringify(config, null, 2),
+                    '',
+                    'VF:', vf || '(empty)',
+                    'AF:', af || '(empty)',
+                    'ComplexFilter:', complexFilter || '(empty)',
+                    'NeedsMapping:', String(needsMapping),
+                    '═══════════════════════════════',
+                ].join('\n'), 'utf-8')
+            } catch { /* */ }
             const encodedPaths: string[] = []
             const queue = [...chunkPaths]
             let doneCount = 0
