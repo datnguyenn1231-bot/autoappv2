@@ -216,8 +216,21 @@ export function buildFilterChain(config: ReupConfig): {
         }
     }
 
+    // Zoom Effect — animated smooth zoom in/out SAU frame template nhưng TRƯỚC reframe
+    // zoompan d=1 = re-evaluate mỗi frame → animated zoom
+    // Phải chạy TRƯỚC reframe để reframe pad không bị zoom override
+    if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
+        const amp = (config.zoomIntensity - 1).toFixed(3)
+        const zoomW = frameDim ? frameDim.w : 1920
+        const zoomH = frameDim ? frameDim.h : 1080
+        vFilters.push(
+            `zoompan=z='1+${amp}*abs(sin(on*PI/300))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':fps=30:s=${zoomW}x${zoomH}`,
+            'setsar=1'
+        )
+    }
+
     // Reframe (X/Y/Z scale + position) — CSS: transform: scale(sx, sy) translate(px, py)
-    // Runs AFTER frame template → input is known (fw x fh)
+    // Runs AFTER zoompan → reframe pad is the LAST size operation (won't be overridden)
     // Handles ALL cases: zoom in, zoom out, mixed (scaleX>100% + scaleY<100%)
     const rfZoom = config.reframeZoom ?? 100
     const rfSX = config.reframeScaleX ?? 100
@@ -252,7 +265,6 @@ export function buildFilterChain(config: ReupConfig): {
         // Step 3: Crop if any dimension > frame (zoom in / scale up)
         const needCropW = scaledW > fw
         const needCropH = scaledH > fh
-        // After pad, current size = max(scaled, frame) in each dim
         if (needCropW || needCropH) {
             const cx = needCropW ? Math.max(0, Math.round((scaledW - fw) / 2 - rfPX)) : 0
             const cy = needCropH ? Math.max(0, Math.round((scaledH - fh) / 2 - rfPY)) : 0
@@ -260,19 +272,6 @@ export function buildFilterChain(config: ReupConfig): {
         }
 
         vFilters.push('setsar=1')
-    }
-
-    // Zoom Effect — animated smooth zoom in/out SAU frame template
-    // zoompan d=1 = re-evaluate mỗi frame → animated zoom
-    // s dùng resolution từ frame template (hoặc default 1920x1080)
-    if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
-        const amp = (config.zoomIntensity - 1).toFixed(3)
-        const zoomW = frameDim ? frameDim.w : 1920
-        const zoomH = frameDim ? frameDim.h : 1080
-        vFilters.push(
-            `zoompan=z='1+${amp}*abs(sin(on*PI/300))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':fps=30:s=${zoomW}x${zoomH}`,
-            'setsar=1'
-        )
     }
 
     // Pixel Enlarge — scale 3x neighbor rồi scale lại (CSS preview: blur(0.4px) contrast(1.12))
