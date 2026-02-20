@@ -88,19 +88,93 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
     const basename = path.basename(inputPath, path.extname(inputPath))
     const outPath = path.join(outputDir, `${basename}_REUP.mp4`)
 
-    // NVEncC path (hiện tại tắt — canUseNVEncC luôn return false)
-    if (useGpu && isNVEncCAvailable() && canUseNVEncC(config)) {
+    // ─── DEBUG: Ghi TOÀN BỘ config + routing decision ───
+    const nvencAvail = isNVEncCAvailable()
+    const nvencCompat = canUseNVEncC(config)
+    const willUseNVEncC = useGpu && nvencAvail && nvencCompat
+    const debugInfo = [
+        '═══════ REUP DEBUG: processVideo ═══════',
+        `Time: ${new Date().toISOString()}`,
+        `Input: ${inputPath}`,
+        `useGpu: ${useGpu}`,
+        `isNVEncCAvailable: ${nvencAvail}`,
+        `canUseNVEncC: ${nvencCompat}`,
+        `>>> ROUTING: ${willUseNVEncC ? 'NVEncC (GPU shaders)' : 'FFmpeg (software filters)'}`,
+        '',
+        'FULL CONFIG:',
+        JSON.stringify(config, null, 2),
+        '',
+        'FILTER CHAIN (from buildFilterChain):',
+    ].join('\n')
+
+    // Build filter chain debug
+    const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
+    const filterDebug = [
+        `VF: ${vf || '(empty)'}`,
+        `AF: ${af || '(empty)'}`,
+        `ComplexFilter: ${complexFilter || '(empty)'}`,
+        `ExtraInputs: ${JSON.stringify(extraInputs)}`,
+        `NeedsMapping: ${needsMapping}`,
+        '═══════════════════════════════════════',
+    ].join('\n')
+
+    const debugPath = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
+    try { fs.writeFileSync(debugPath, debugInfo + '\n' + filterDebug, 'utf-8') } catch { /* */ }
+
+    // Try NVEncC + libplacebo shaders (10-15x faster) if compatible
+    if (willUseNVEncC) {
         try {
-            const nvArgs = buildNVEncCArgs(config, inputPath, outPath)
-            await runNVEnc(nvArgs)
+            if (needsSeparateAudio(config)) {
+                // Audio effects need FFmpeg — process audio separately
+                const tmpVideo = path.join(outputDir, `${basename}_tmpvideo.mp4`)
+                const tmpAudio = path.join(outputDir, `${basename}_tmpaudio.aac`)
+
+                // Step 1: NVEncC encodes video (no audio)
+                const nvArgs = buildNVEncCArgs(config, inputPath, tmpVideo)
+                await runNVEnc(nvArgs)
+
+                // Step 2: FFmpeg extracts + processes audio
+                const { af } = buildFilterChain(config)
+                const audioArgs = ['-y', '-i', inputPath]
+                if (af) audioArgs.push('-af', af)
+                audioArgs.push('-vn', '-c:a', 'aac', '-b:a', '192k', tmpAudio)
+                await runFF(audioArgs)
+
+                // Step 3: FFmpeg muxes video + audio
+                await runFF(['-y', '-i', tmpVideo, '-i', tmpAudio,
+                    '-c:v', 'copy', '-c:a', 'copy',
+                    '-movflags', '+faststart', outPath])
+
+                // Cleanup temp files
+                try { fs.unlinkSync(tmpVideo) } catch { /* */ }
+                try { fs.unlinkSync(tmpAudio) } catch { /* */ }
+            } else {
+                // No audio effects — NVEncC handles everything
+                const nvArgs = buildNVEncCArgs(config, inputPath, outPath)
+                await runNVEnc(nvArgs)
+            }
+
+            // Speed post-processing: NVEncC đã render video → FFmpeg chỉ setpts + atempo (nhanh)
+            if (needsSpeedPostProcess(config)) {
+                const tmpSpeed = path.join(outputDir, `${basename}_tmpspeed.mp4`)
+                fs.renameSync(outPath, tmpSpeed)
+                const speedArgs = ['-y', '-i', tmpSpeed,
+                    '-vf', `setpts=PTS/${config.speed.toFixed(3)}`,
+                    '-af', `atempo=${config.speed.toFixed(3)}`,
+                    '-c:v', 'h264_nvenc', '-preset', 'p1', '-cq', '23',
+                    '-c:a', 'aac', '-b:a', '192k',
+                    '-movflags', '+faststart', outPath]
+                await runFF(speedArgs)
+                try { fs.unlinkSync(tmpSpeed) } catch { /* */ }
+            }
+
             return outPath
         } catch {
             // NVEncC failed — fallback to FFmpeg below
         }
     }
 
-    // FFmpeg path — buildFilterChain áp dụng TẤT CẢ 16 filters
-    const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
+    // FFmpeg path — sử dụng filter chain đã build ở trên (debug section)
 
     const args: string[] = ['-y', '-i', inputPath]
     for (const inp of extraInputs) args.push('-i', inp)
@@ -117,6 +191,7 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
     if (useGpu) args.push('-c:v', 'h264_nvenc', '-preset', 'p2', '-cq', '23')
     else args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23')
 
+    console.log('FFmpeg CMD:', ['ffmpeg', ...args, outPath].join(' '))
 
     args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-loglevel', 'error', outPath)
     await runFF(args)
