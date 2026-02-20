@@ -198,14 +198,19 @@ export class ReupFilterBuilder {
         }
     }
 
-    /** L9: Zoom Effect (Ken Burns) */
+    /**
+     * L9: Zoom Effect — dùng crop center (zoom in tĩnh).
+     * KHÔNG dùng zoompan! zoompan mặc định output 852x480 → video bị thu nhỏ.
+     * Crop center 1/z → Frame Template scale lên kích thước target sau.
+     */
     private addZoomEffect(): void {
         const z = this.config.zoomIntensity
         if (this.config.zoomEffect && z && z > 1.0) {
+            // Zoom 1.15x → crop center 1/1.15 ≈ 87% → hiệu ứng zoom in
+            const cropRatio = (1 / z).toFixed(4)
             this.vFilters.push(
-                `zoompan=z='min(zoom+0.0005,${z.toFixed(3)})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:fps=30`
+                `crop=iw*${cropRatio}:ih*${cropRatio}:(iw-ow)/2:(ih-oh)/2`
             )
-            this.vFilters.push('scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos')
         }
     }
 
