@@ -144,26 +144,34 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
     // FFmpeg path (dùng buildFilterChain gốc)
     const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
 
-    // ─── DEBUG: In ra config + filter chain để kiểm tra ───
-    console.log('═══════ REUP DEBUG: processVideo ═══════')
-    console.log('Config:', JSON.stringify({
-        mirror: config.mirror, crop: config.crop, noise: config.noise,
-        rotate: config.rotate, lensDistortion: config.lensDistortion,
-        hdr: config.hdr, colorGrading: config.colorGrading, glow: config.glow,
-        zoomEffect: config.zoomEffect, zoomIntensity: config.zoomIntensity,
-        borderWidth: config.borderWidth, borderColor: config.borderColor,
-        frameTemplate: config.frameTemplate, pixelEnlarge: config.pixelEnlarge,
-        rgbDrift: config.rgbDrift, chromaShuffle: config.chromaShuffle,
-        titleTemplate: config.titleTemplate, titleText: config.titleText,
-        descText: config.descText, logoPath: config.logoPath,
-        speed: config.speed, srtPath: config.srtPath,
-    }, null, 2))
-    console.log('VF:', vf || '(none)')
-    console.log('AF:', af || '(none)')
-    console.log('ComplexFilter:', complexFilter || '(none)')
-    console.log('ExtraInputs:', extraInputs)
-    console.log('NeedsMapping:', needsMapping)
-    console.log('═══════════════════════════════════════')
+    // ─── DEBUG: Ghi ra file trên Desktop để kiểm tra ───
+    const debugInfo = [
+        '═══════ REUP DEBUG: processVideo ═══════',
+        'Config: ' + JSON.stringify({
+            mirror: config.mirror, crop: config.crop, noise: config.noise,
+            rotate: config.rotate, lensDistortion: config.lensDistortion,
+            hdr: config.hdr, colorGrading: config.colorGrading, glow: config.glow,
+            zoomEffect: config.zoomEffect, zoomIntensity: config.zoomIntensity,
+            borderWidth: config.borderWidth, borderColor: config.borderColor,
+            frameTemplate: config.frameTemplate, pixelEnlarge: config.pixelEnlarge,
+            rgbDrift: config.rgbDrift, chromaShuffle: config.chromaShuffle,
+            titleTemplate: config.titleTemplate, titleText: config.titleText,
+            descText: config.descText, logoPath: config.logoPath,
+            speed: config.speed, srtPath: config.srtPath,
+        }, null, 2),
+        '',
+        'VF: ' + (vf || '(none)'),
+        '',
+        'AF: ' + (af || '(none)'),
+        '',
+        'ComplexFilter: ' + (complexFilter || '(none)'),
+        '',
+        'ExtraInputs: ' + JSON.stringify(extraInputs),
+        'NeedsMapping: ' + needsMapping,
+        '═══════════════════════════════════════',
+    ].join('\n')
+    const debugPath = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
+    try { fs.writeFileSync(debugPath, debugInfo, 'utf-8') } catch { /* */ }
 
     const args: string[] = ['-y', '-i', inputPath]
     for (const inp of extraInputs) args.push('-i', inp)
