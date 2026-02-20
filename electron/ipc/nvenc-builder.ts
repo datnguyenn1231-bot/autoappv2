@@ -49,13 +49,26 @@ export function isNVEncCAvailable(): boolean {
 
 /**
  * Check if NVEncC can handle this config.
- * With libplacebo shaders, NVEncC handles nearly ALL visual filters.
- * Speed change: NVEncC render bình thường → FFmpeg setpts/atempo sau (nhanh hơn)
+ * NVEncC supports: mirror, crop, noise, rotate, lens, HDR, color grading,
+ *   glow, pixel enlarge, RGB drift, chroma shuffle, zoom, subtitles, logo, metadata.
+ * NVEncC KHÔNG hỗ trợ:
+ *   - Title text overlay (drawtext) — cần FFmpeg
+ *   - Frame Template với padding (--output-res chỉ resize, KHÔNG pad black bars)
+ *   - Colored border (--vpp-pad không hỗ trợ color)
+ *   - Speed change (setpts/atempo) — cần FFmpeg post-process
  */
 export function canUseNVEncC(config: ReupConfig): boolean {
-    // NVEncC xử lý TẤT CẢ visual filters qua libplacebo shaders
-    // Speed change sẽ được xử lý riêng bằng FFmpeg sau khi NVEncC render xong
-    // → Cho phép NVEncC luôn!
+    // Title text → FFmpeg drawtext (NVEncC không có text rendering)
+    if (config.titleTemplate && config.titleTemplate !== 'none') return false
+    if (config.titleText || config.descText) return false
+
+    // Frame Template → FFmpeg scale+pad (NVEncC --output-res chỉ resize, không pad)
+    if (config.frameTemplate && config.frameTemplate !== 'none') return false
+
+    // Colored border → FFmpeg pad filter (NVEncC --vpp-pad không hỗ trợ color)
+    if (config.borderWidth && config.borderWidth > 0) return false
+
+    // Tất cả filter còn lại NVEncC xử lý được qua libplacebo shaders
     return true
 }
 
