@@ -518,6 +518,12 @@ async function exportVideo() {
     segmentLength: 15,
     // Subtitles
     srtPath: subSrtPath.value || '',
+    // Reframe
+    reframeZoom: videoZoom.value,
+    reframeScaleX: videoScaleX.value,
+    reframeScaleY: videoScaleY.value,
+    reframePosX: videoPosX.value,
+    reframePosY: videoPosY.value,
   }
 
   isExporting.value = true

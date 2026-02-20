@@ -41,6 +41,12 @@ export interface ReupConfig {
     logoPath?: string
     logoPosition?: string
     logoSize?: number
+    // Reframe (scale X/Y/Z + position)
+    reframeZoom?: number     // 50-300, default 100
+    reframeScaleX?: number   // 50-200, default 100
+    reframeScaleY?: number   // 50-200, default 100
+    reframePosX?: number     // px offset, default 0
+    reframePosY?: number     // px offset, default 0
 }
 
 /** Color grading FFmpeg filter strings */
@@ -199,6 +205,33 @@ export function buildFilterChain(config: ReupConfig): {
         }
     }
 
+    // Reframe (X/Y/Z scale + position) — CSS: transform: scale(sx, sy) translate(px, py)
+    // FFmpeg: scale up → crop back to frame size with offset
+    const rfZoom = config.reframeZoom ?? 100
+    const rfSX = config.reframeScaleX ?? 100
+    const rfSY = config.reframeScaleY ?? 100
+    const rfPX = config.reframePosX ?? 0
+    const rfPY = config.reframePosY ?? 0
+    const hasReframe = rfZoom !== 100 || rfSX !== 100 || rfSY !== 100 || rfPX !== 0 || rfPY !== 0
+    if (hasReframe) {
+        // Total scale factors
+        const totalSX = (rfZoom / 100) * (rfSX / 100)
+        const totalSY = (rfZoom / 100) * (rfSY / 100)
+        // Scale up by total factor
+        vFilters.push(
+            `scale=trunc(iw*${totalSX.toFixed(3)}/2)*2:trunc(ih*${totalSY.toFixed(3)}/2)*2:flags=lanczos`
+        )
+        // Crop back to frame dimensions with position offset
+        const fw = frameDim ? frameDim.w : 1920
+        const fh = frameDim ? frameDim.h : 1080
+        const cx = Math.round((fw * totalSX - fw) / 2 - rfPX)
+        const cy = Math.round((fh * totalSY - fh) / 2 - rfPY)
+        vFilters.push(
+            `crop=${fw}:${fh}:${Math.max(0, cx)}:${Math.max(0, cy)}`,
+            'setsar=1'
+        )
+    }
+
     // Zoom Effect — animated smooth zoom in/out SAU frame template
     // zoompan d=1 = re-evaluate mỗi frame → animated zoom
     // s dùng resolution từ frame template (hoặc default 1920x1080)
@@ -234,7 +267,10 @@ export function buildFilterChain(config: ReupConfig): {
     }
 
     // Title Text overlay (drawtext)
-    if (config.titleTemplate && config.titleTemplate !== 'none') {
+    // Render khi titleTemplate được chọn HOẶC khi titleText có nội dung
+    const hasTitle = config.titleText && config.titleText.trim()
+    const hasDesc = config.descText && config.descText.trim()
+    if ((config.titleTemplate && config.titleTemplate !== 'none') || hasTitle || hasDesc) {
         const esc = (t: string) => t
             .replace(/:/g, '\\:')
             .replace(/'/g, "\\'")
