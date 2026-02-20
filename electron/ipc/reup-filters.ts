@@ -310,15 +310,16 @@ export function buildFilterChain(config: ReupConfig): {
 
         // Map CSS font name → Windows font file
         const fontMap: Record<string, string> = {
-            'Inter': 'C\\\\:/Windows/Fonts/arial.ttf',
-            'Arial': 'C\\\\:/Windows/Fonts/arial.ttf',
-            'Arial Bold': 'C\\\\:/Windows/Fonts/arialbd.ttf',
-            'Georgia': 'C\\\\:/Windows/Fonts/georgia.ttf',
-            'Times New Roman': 'C\\\\:/Windows/Fonts/times.ttf',
-            'Courier New': 'C\\\\:/Windows/Fonts/cour.ttf',
-            'Verdana': 'C\\\\:/Windows/Fonts/verdana.ttf',
-            'Impact': 'C\\\\:/Windows/Fonts/impact.ttf',
-            'Tahoma': 'C\\\\:/Windows/Fonts/tahoma.ttf',
+            'Inter': 'C\\:/Windows/Fonts/arial.ttf',
+            'Arial': 'C\\:/Windows/Fonts/arial.ttf',
+            'Arial Bold': 'C\\:/Windows/Fonts/arialbd.ttf',
+            'Georgia': 'C\\:/Windows/Fonts/georgia.ttf',
+            'Times New Roman': 'C\\:/Windows/Fonts/times.ttf',
+            'Courier New': 'C\\:/Windows/Fonts/cour.ttf',
+            'Verdana': 'C\\:/Windows/Fonts/verdana.ttf',
+            'Impact': 'C\\:/Windows/Fonts/impact.ttf',
+            'Tahoma': 'C\\:/Windows/Fonts/tahoma.ttf',
+            'Sigmar One': 'C\\:/Windows/Fonts/impact.ttf',
         }
         const userFont = config.textFont || 'Inter'
         const fontPath = fontMap[userFont] || fontMap['Inter']
@@ -330,12 +331,6 @@ export function buildFilterChain(config: ReupConfig): {
 
         // Text color
         const fontcolor = config.textColor || '#ffffff'
-
-        // Position with user offset
-        const titleOX = config.titleOffsetX || 0
-        const titleOY = config.titleOffsetY || 0
-        const descOX = config.descOffsetX || 0
-        const descOY = config.descOffsetY || 0
 
         // Word-wrap: split long text into lines of ~25 chars for 1080px width
         const wrapText = (text: string, maxChars: number): string[] => {
@@ -354,21 +349,35 @@ export function buildFilterChain(config: ReupConfig): {
             return lines
         }
 
+        // Position conversion: CSS uses translate() from CENTER of container
+        // FFmpeg drawtext y= is ABSOLUTE from TOP of frame
+        // CSS center for 9:16 (1920h): centerY ≈ 200px from top in preview = 600px in 1080p
+        // Offset is CSS px * previewScale added on top of absolute baseY
+        const frameH = frameDim ? frameDim.h : 1080
+        const titleOX = (config.titleOffsetX || 0) * previewScale
+        const titleOY = (config.titleOffsetY || 0) * previewScale
+        const descOX = (config.descOffsetX || 0) * previewScale
+        const descOY = (config.descOffsetY || 0) * previewScale
+
         if (config.titleText) {
             const lines = wrapText(config.titleText, 25)
-            // Draw each line separately for word-wrap
+            // Base position: centered in top 1/3 of frame + user offset
+            const baseY = Math.max(20, Math.round(frameH / 6 + titleOY))
             lines.forEach((line, i) => {
-                const yPos = 150 + titleOY * previewScale + i * (titleSize + 10)
+                const yPos = baseY + i * (titleSize + 10)
                 vFilters.push(
-                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${titleOX * previewScale}:y=${yPos}:fontsize=${titleSize}:fontcolor=${fontcolor}:borderw=5:bordercolor=black:shadowx=2:shadowy=2:shadowcolor=black@0.6`
+                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${titleOX}:y=${yPos}:fontsize=${titleSize}:fontcolor=${fontcolor}:borderw=5:bordercolor=black:shadowx=2:shadowy=2:shadowcolor=black@0.6`
                 )
             })
         }
         if (config.descText) {
             const lines = wrapText(config.descText, 30)
+            // Desc: positioned from bottom of frame + offset
+            const descBaseY = Math.min(frameH - 50, Math.round(frameH * 5 / 6 + descOY))
             lines.forEach((line, i) => {
+                const yPos = descBaseY - (lines.length - 1 - i) * (descSize + 8)
                 vFilters.push(
-                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${descOX * previewScale}:y=h-${200 + descOY * previewScale}-th-${(lines.length - 1 - i) * (descSize + 8)}:fontsize=${descSize}:fontcolor=${fontcolor}:borderw=4:bordercolor=black:shadowx=1:shadowy=1:shadowcolor=black@0.5`
+                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${descOX}:y=${yPos}:fontsize=${descSize}:fontcolor=${fontcolor}:borderw=4:bordercolor=black:shadowx=1:shadowy=1:shadowcolor=black@0.5`
                 )
             })
         }
