@@ -206,8 +206,8 @@ export function buildFilterChain(config: ReupConfig): {
     }
 
     // Reframe (X/Y/Z scale + position) — CSS: transform: scale(sx, sy) translate(px, py)
-    // Zoom > 100%: scale up → crop back to frame size (pan within zoomed image)
-    // Zoom < 100%: scale down → pad to frame size (video smaller inside frame)
+    // Runs AFTER frame template → input is known (fw x fh)
+    // Handles ALL cases: zoom in, zoom out, mixed (scaleX>100% + scaleY<100%)
     const rfZoom = config.reframeZoom ?? 100
     const rfSX = config.reframeScaleX ?? 100
     const rfSY = config.reframeScaleY ?? 100
@@ -220,22 +220,34 @@ export function buildFilterChain(config: ReupConfig): {
         const fw = frameDim ? frameDim.w : 1920
         const fh = frameDim ? frameDim.h : 1080
 
-        // Scale video by reframe factor
-        vFilters.push(
-            `scale=trunc(iw*${totalSX.toFixed(3)}/2)*2:trunc(ih*${totalSY.toFixed(3)}/2)*2:flags=lanczos`
-        )
+        // Pre-calculate scaled dimensions (even numbers)
+        const scaledW = Math.round(fw * totalSX / 2) * 2
+        const scaledH = Math.round(fh * totalSY / 2) * 2
 
-        if (totalSX >= 1.0 && totalSY >= 1.0) {
-            // Zoom IN: video is larger → crop to frame with position offset
-            const cx = Math.max(0, Math.round((fw * totalSX - fw) / 2 - rfPX))
-            const cy = Math.max(0, Math.round((fh * totalSY - fh) / 2 - rfPY))
-            vFilters.push(`crop=${fw}:${fh}:${cx}:${cy}`)
-        } else {
-            // Zoom OUT: video is smaller → pad to frame size, centered with offset
-            const padX = Math.max(0, Math.round((fw - fw * totalSX) / 2 + rfPX))
-            const padY = Math.max(0, Math.round((fh - fh * totalSY) / 2 + rfPY))
-            vFilters.push(`pad=${fw}:${fh}:${padX}:${padY}:color=black`)
+        // Step 1: Scale to reframe size
+        vFilters.push(`scale=${scaledW}:${scaledH}:flags=lanczos`)
+
+        // Step 2: Pad if any dimension < frame (zoom out / scale down)
+        const needPadW = scaledW < fw
+        const needPadH = scaledH < fh
+        if (needPadW || needPadH) {
+            const pw = Math.max(scaledW, fw)
+            const ph = Math.max(scaledH, fh)
+            const px = needPadW ? Math.max(0, Math.round((fw - scaledW) / 2 + rfPX)) : 0
+            const py = needPadH ? Math.max(0, Math.round((fh - scaledH) / 2 + rfPY)) : 0
+            vFilters.push(`pad=${pw}:${ph}:${px}:${py}:color=black`)
         }
+
+        // Step 3: Crop if any dimension > frame (zoom in / scale up)
+        const needCropW = scaledW > fw
+        const needCropH = scaledH > fh
+        // After pad, current size = max(scaled, frame) in each dim
+        if (needCropW || needCropH) {
+            const cx = needCropW ? Math.max(0, Math.round((scaledW - fw) / 2 - rfPX)) : 0
+            const cy = needCropH ? Math.max(0, Math.round((scaledH - fh) / 2 - rfPY)) : 0
+            vFilters.push(`crop=${fw}:${fh}:${cx}:${cy}`)
+        }
+
         vFilters.push('setsar=1')
     }
 
