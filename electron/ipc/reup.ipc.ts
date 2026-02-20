@@ -574,8 +574,32 @@ export function registerReupIPC(): void {
         if (config.cleanMetadata) args.push('-map_metadata', '-1')
         if (useGpu) args.push('-c:v', 'h264_nvenc', '-preset', 'p1', '-cq', '23')
         else args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23')
-        args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-loglevel', 'error', outPath)
-        await runFF(args)
+        args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', outPath)
+
+        // DEBUG: Log FFmpeg command to debug file
+        const debugPath2 = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
+        try {
+            const cmdLine = `\n\n═══ ENCODE CHUNK ═══\nCMD: ffmpeg ${args.join(' ')}\n`
+            fs.appendFileSync(debugPath2, cmdLine, 'utf-8')
+        } catch { /* */ }
+
+        // Run FFmpeg and capture stderr
+        await new Promise<void>((resolve, reject) => {
+            if (stopped) return reject(new Error('Stopped'))
+            const proc = spawn(getFFmpegPath(), args, { windowsHide: true })
+            activeProcs.push(proc)
+            let stderr = ''
+            proc.stderr?.on('data', (d: Buffer) => { stderr += d.toString() })
+            proc.on('close', (code) => {
+                activeProcs = activeProcs.filter(p => p !== proc)
+                // Append stderr to debug file
+                try {
+                    fs.appendFileSync(debugPath2, `EXIT: ${code}\nSTDERR:\n${stderr.slice(-500)}\n`, 'utf-8')
+                } catch { /* */ }
+                code === 0 ? resolve() : reject(new Error(`FFmpeg exit ${code}: ${stderr.slice(-300)}`))
+            })
+            proc.on('error', (e) => { activeProcs = activeProcs.filter(p => p !== proc); reject(e) })
+        })
     }
 
     /** Split & Stitch parallel export */
