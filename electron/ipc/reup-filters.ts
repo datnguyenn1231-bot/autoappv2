@@ -148,17 +148,17 @@ export function buildFilterChain(config: ReupConfig): {
         vFilters.push(`noise=alls=${intensity}:allf=t+u`)
     }
 
-    // L4: Subtle Rotate
+    // L4: Subtle Rotate — tăng 1.5x vì effect bị giảm sau downscale fit 9:16
     if (config.rotate) {
         const deg = typeof config.rotate === 'number' ? config.rotate : 2
-        const rad = (deg * Math.PI / 180).toFixed(4)
-        vFilters.push(`rotate=${rad}:c=none`)
+        const boosted = deg * 1.5 // compensate for downscale
+        const rad = (boosted * Math.PI / 180).toFixed(4)
+        vFilters.push(`rotate=${rad}:c=black:ow=rotw(${rad}):oh=roth(${rad})`)
     }
 
-    // L5: Lens Distortion — CSS preview: perspective(500px) rotateY(2deg) → rất rõ
-    // FFmpeg: tăng k1/k2 để visible (k1=-0.18 barrel distortion rõ, k2=-0.08 pincushion)
+    // L5: Lens Distortion — tăng mạnh vì bị giảm khi downscale vào frame 9:16
     if (config.lensDistortion) {
-        vFilters.push('lenscorrection=cx=0.5:cy=0.5:k1=-0.18:k2=-0.08')
+        vFilters.push('lenscorrection=cx=0.5:cy=0.5:k1=-0.30:k2=-0.12')
     }
 
     // L6: HDR
@@ -175,11 +175,13 @@ export function buildFilterChain(config: ReupConfig): {
         if (cgFilter) vFilters.push(cgFilter)
     }
 
-    // Glow/Bloom — tăng cường cho match CSS preview (drop-shadow(0 0 8px rgba(255,200,100,0.35)))
+    // Glow/Bloom — CSS preview: drop-shadow(0 0 8px rgba(255,200,100,0.35))
+    // Thêm colorbalance warm tones (rs/gs shift) để match CSS warm orange glow
     if (config.glow) {
         vFilters.push(
             'eq=brightness=0.10:contrast=1.08',
-            'unsharp=13:13:1.8:13:13:0.0'
+            'unsharp=13:13:1.8:13:13:0.0',
+            'colorbalance=rs=0.08:gs=0.04:bs=-0.04:rm=0.05:gm=0.02:bm=-0.03'
         )
     }
     // Zoom Effect — moved AFTER frame template (see below)
