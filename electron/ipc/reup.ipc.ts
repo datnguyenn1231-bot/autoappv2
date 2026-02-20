@@ -88,8 +88,41 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
     const basename = path.basename(inputPath, path.extname(inputPath))
     const outPath = path.join(outputDir, `${basename}_REUP.mp4`)
 
+    // ─── DEBUG: Ghi TOÀN BỘ config + routing decision ───
+    const nvencAvail = isNVEncCAvailable()
+    const nvencCompat = canUseNVEncC(config)
+    const willUseNVEncC = useGpu && nvencAvail && nvencCompat
+    const debugInfo = [
+        '═══════ REUP DEBUG: processVideo ═══════',
+        `Time: ${new Date().toISOString()}`,
+        `Input: ${inputPath}`,
+        `useGpu: ${useGpu}`,
+        `isNVEncCAvailable: ${nvencAvail}`,
+        `canUseNVEncC: ${nvencCompat}`,
+        `>>> ROUTING: ${willUseNVEncC ? 'NVEncC (GPU shaders)' : 'FFmpeg (software filters)'}`,
+        '',
+        'FULL CONFIG:',
+        JSON.stringify(config, null, 2),
+        '',
+        'FILTER CHAIN (from buildFilterChain):',
+    ].join('\n')
+
+    // Build filter chain debug
+    const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
+    const filterDebug = [
+        `VF: ${vf || '(empty)'}`,
+        `AF: ${af || '(empty)'}`,
+        `ComplexFilter: ${complexFilter || '(empty)'}`,
+        `ExtraInputs: ${JSON.stringify(extraInputs)}`,
+        `NeedsMapping: ${needsMapping}`,
+        '═══════════════════════════════════════',
+    ].join('\n')
+
+    const debugPath = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
+    try { fs.writeFileSync(debugPath, debugInfo + '\n' + filterDebug, 'utf-8') } catch { /* */ }
+
     // Try NVEncC + libplacebo shaders (10-15x faster) if compatible
-    if (useGpu && isNVEncCAvailable() && canUseNVEncC(config)) {
+    if (willUseNVEncC) {
         try {
             if (needsSeparateAudio(config)) {
                 // Audio effects need FFmpeg — process audio separately
@@ -141,37 +174,7 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
         }
     }
 
-    // FFmpeg path (dùng buildFilterChain gốc)
-    const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
-
-    // ─── DEBUG: Ghi ra file trên Desktop để kiểm tra ───
-    const debugInfo = [
-        '═══════ REUP DEBUG: processVideo ═══════',
-        'Config: ' + JSON.stringify({
-            mirror: config.mirror, crop: config.crop, noise: config.noise,
-            rotate: config.rotate, lensDistortion: config.lensDistortion,
-            hdr: config.hdr, colorGrading: config.colorGrading, glow: config.glow,
-            zoomEffect: config.zoomEffect, zoomIntensity: config.zoomIntensity,
-            borderWidth: config.borderWidth, borderColor: config.borderColor,
-            frameTemplate: config.frameTemplate, pixelEnlarge: config.pixelEnlarge,
-            rgbDrift: config.rgbDrift, chromaShuffle: config.chromaShuffle,
-            titleTemplate: config.titleTemplate, titleText: config.titleText,
-            descText: config.descText, logoPath: config.logoPath,
-            speed: config.speed, srtPath: config.srtPath,
-        }, null, 2),
-        '',
-        'VF: ' + (vf || '(none)'),
-        '',
-        'AF: ' + (af || '(none)'),
-        '',
-        'ComplexFilter: ' + (complexFilter || '(none)'),
-        '',
-        'ExtraInputs: ' + JSON.stringify(extraInputs),
-        'NeedsMapping: ' + needsMapping,
-        '═══════════════════════════════════════',
-    ].join('\n')
-    const debugPath = path.join(os.homedir(), 'Desktop', 'REUP_DEBUG.txt')
-    try { fs.writeFileSync(debugPath, debugInfo, 'utf-8') } catch { /* */ }
+    // FFmpeg path — sử dụng filter chain đã build ở trên (debug section)
 
     const args: string[] = ['-y', '-i', inputPath]
     for (const inp of extraInputs) args.push('-i', inp)
