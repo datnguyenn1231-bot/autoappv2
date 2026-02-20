@@ -206,7 +206,8 @@ export function buildFilterChain(config: ReupConfig): {
     }
 
     // Reframe (X/Y/Z scale + position) — CSS: transform: scale(sx, sy) translate(px, py)
-    // FFmpeg: scale up → crop back to frame size with offset
+    // Zoom > 100%: scale up → crop back to frame size (pan within zoomed image)
+    // Zoom < 100%: scale down → pad to frame size (video smaller inside frame)
     const rfZoom = config.reframeZoom ?? 100
     const rfSX = config.reframeScaleX ?? 100
     const rfSY = config.reframeScaleY ?? 100
@@ -214,22 +215,28 @@ export function buildFilterChain(config: ReupConfig): {
     const rfPY = config.reframePosY ?? 0
     const hasReframe = rfZoom !== 100 || rfSX !== 100 || rfSY !== 100 || rfPX !== 0 || rfPY !== 0
     if (hasReframe) {
-        // Total scale factors
         const totalSX = (rfZoom / 100) * (rfSX / 100)
         const totalSY = (rfZoom / 100) * (rfSY / 100)
-        // Scale up by total factor
+        const fw = frameDim ? frameDim.w : 1920
+        const fh = frameDim ? frameDim.h : 1080
+
+        // Scale video by reframe factor
         vFilters.push(
             `scale=trunc(iw*${totalSX.toFixed(3)}/2)*2:trunc(ih*${totalSY.toFixed(3)}/2)*2:flags=lanczos`
         )
-        // Crop back to frame dimensions with position offset
-        const fw = frameDim ? frameDim.w : 1920
-        const fh = frameDim ? frameDim.h : 1080
-        const cx = Math.round((fw * totalSX - fw) / 2 - rfPX)
-        const cy = Math.round((fh * totalSY - fh) / 2 - rfPY)
-        vFilters.push(
-            `crop=${fw}:${fh}:${Math.max(0, cx)}:${Math.max(0, cy)}`,
-            'setsar=1'
-        )
+
+        if (totalSX >= 1.0 && totalSY >= 1.0) {
+            // Zoom IN: video is larger → crop to frame with position offset
+            const cx = Math.max(0, Math.round((fw * totalSX - fw) / 2 - rfPX))
+            const cy = Math.max(0, Math.round((fh * totalSY - fh) / 2 - rfPY))
+            vFilters.push(`crop=${fw}:${fh}:${cx}:${cy}`)
+        } else {
+            // Zoom OUT: video is smaller → pad to frame size, centered with offset
+            const padX = Math.max(0, Math.round((fw - fw * totalSX) / 2 + rfPX))
+            const padY = Math.max(0, Math.round((fh - fh * totalSY) / 2 + rfPY))
+            vFilters.push(`pad=${fw}:${fh}:${padX}:${padY}:color=black`)
+        }
+        vFilters.push('setsar=1')
     }
 
     // Zoom Effect — animated smooth zoom in/out SAU frame template
