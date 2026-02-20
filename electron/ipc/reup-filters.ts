@@ -181,7 +181,7 @@ export function buildFilterChain(config: ReupConfig): {
     if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
         const amp = (config.zoomIntensity - 1).toFixed(3) // e.g. 0.15 for 1.15x
         vFilters.push(
-            `crop='iw/(1+${amp}*sin(t*0.5))':'ih/(1+${amp}*sin(t*0.5))':'(iw-ow)/2':'(ih-oh)/2'`
+            `crop=iw/(1+${amp}*sin(t*0.5)):ih/(1+${amp}*sin(t*0.5)):(iw-ow)/2:(ih-oh)/2`
         )
     }
 
