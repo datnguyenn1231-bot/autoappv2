@@ -175,13 +175,11 @@ export function buildFilterChain(config: ReupConfig): {
             'unsharp=9:9:1.2:9:9:0.0'
         )
     }
-
-    // Zoom Effect (Ken Burns)
+    // Zoom Effect — crop center (KHÔNG dùng zoompan! s=iw*2:ih*2 lỗi Invalid argument)
     if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
-        const z = config.zoomIntensity.toFixed(3)
+        const cropRatio = (1 / config.zoomIntensity).toFixed(4)
         vFilters.push(
-            `zoompan=z='min(zoom+0.0005,${z})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=iw*2:ih*2:fps=30`,
-            'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos'
+            `crop=iw*${cropRatio}:ih*${cropRatio}:(iw-ow)/2:(ih-oh)/2`
         )
     }
 
