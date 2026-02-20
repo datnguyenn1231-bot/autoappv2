@@ -176,12 +176,12 @@ export function buildFilterChain(config: ReupConfig): {
             'unsharp=13:13:1.8:13:13:0.0'
         )
     }
-    // Zoom Effect — animated smooth zoom in/out (CSS preview: slowZoom animation)
-    // Dùng crop với sin(t) để tạo zoom trôi ra/trôi vào mượt giống preview
+    // Zoom Effect — static center crop (animated sin(t) gây lỗi parse trên Windows)
     if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
-        const amp = (config.zoomIntensity - 1).toFixed(3) // e.g. 0.15 for 1.15x
+        const boostedZoom = config.zoomIntensity * 1.3
+        const cropRatio = (1 / boostedZoom).toFixed(4)
         vFilters.push(
-            `crop=iw/(1+${amp}*sin(t*0.5)):ih/(1+${amp}*sin(t*0.5)):(iw-ow)/2:(ih-oh)/2`
+            `crop=iw*${cropRatio}:ih*${cropRatio}:(iw-ow)/2:(ih-oh)/2`
         )
     }
 
