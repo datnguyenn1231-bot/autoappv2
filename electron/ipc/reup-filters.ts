@@ -176,17 +176,7 @@ export function buildFilterChain(config: ReupConfig): {
             'unsharp=13:13:1.8:13:13:0.0'
         )
     }
-    // Zoom Effect — animated smooth zoom in/out (CSS preview: slowZoom animation)
-    // zoompan d=1 = re-evaluate mỗi frame → animated zoom cho video
-    // Expression sin() tạo zoom trôi ra/trôi vào mượt ~20 giây/chu kỳ
-    // s=1920x1080 dùng 'x' separator (KHÔNG dùng ':' → tránh lỗi parse)
-    if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
-        const amp = (config.zoomIntensity - 1).toFixed(3) // e.g. 0.15
-        vFilters.push(
-            `zoompan=z='1+${amp}*abs(sin(on*PI/300))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':fps=30:s=1920x1080`,
-            'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1'
-        )
-    }
+    // Zoom Effect — moved AFTER frame template (see below)
 
     // Border
     if (config.borderWidth && config.borderWidth > 0) {
@@ -197,15 +187,29 @@ export function buildFilterChain(config: ReupConfig): {
     }
 
     // Frame Template (aspect ratio conversion)
+    let frameDim: { w: number; h: number } | null = null
     if (config.frameTemplate && config.frameTemplate !== 'none') {
-        const dim = getFrameDimensions(config.frameTemplate)
-        if (dim) {
+        frameDim = getFrameDimensions(config.frameTemplate)
+        if (frameDim) {
             vFilters.push(
-                `scale=${dim.w}:${dim.h}:force_original_aspect_ratio=decrease:flags=lanczos`,
-                `pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black`,
+                `scale=${frameDim.w}:${frameDim.h}:force_original_aspect_ratio=decrease:flags=lanczos`,
+                `pad=${frameDim.w}:${frameDim.h}:(ow-iw)/2:(oh-ih)/2:color=black`,
                 'setsar=1'
             )
         }
+    }
+
+    // Zoom Effect — animated smooth zoom in/out SAU frame template
+    // zoompan d=1 = re-evaluate mỗi frame → animated zoom
+    // s dùng resolution từ frame template (hoặc default 1920x1080)
+    if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
+        const amp = (config.zoomIntensity - 1).toFixed(3)
+        const zoomW = frameDim ? frameDim.w : 1920
+        const zoomH = frameDim ? frameDim.h : 1080
+        vFilters.push(
+            `zoompan=z='1+${amp}*abs(sin(on*PI/300))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':fps=30:s=${zoomW}x${zoomH}`,
+            'setsar=1'
+        )
     }
 
     // Pixel Enlarge — scale 3x neighbor rồi scale lại (CSS preview: blur(0.4px) contrast(1.12))
