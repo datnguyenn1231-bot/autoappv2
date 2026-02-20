@@ -141,8 +141,30 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
         }
     }
 
-    // FFmpeg path (dùng ReupFilterBuilder)
+    // FFmpeg path (dùng buildFilterChain gốc)
     const { vf, af, complexFilter, extraInputs, needsMapping } = buildFilterChain(config)
+
+    // ─── DEBUG: In ra config + filter chain để kiểm tra ───
+    console.log('═══════ REUP DEBUG: processVideo ═══════')
+    console.log('Config:', JSON.stringify({
+        mirror: config.mirror, crop: config.crop, noise: config.noise,
+        rotate: config.rotate, lensDistortion: config.lensDistortion,
+        hdr: config.hdr, colorGrading: config.colorGrading, glow: config.glow,
+        zoomEffect: config.zoomEffect, zoomIntensity: config.zoomIntensity,
+        borderWidth: config.borderWidth, borderColor: config.borderColor,
+        frameTemplate: config.frameTemplate, pixelEnlarge: config.pixelEnlarge,
+        rgbDrift: config.rgbDrift, chromaShuffle: config.chromaShuffle,
+        titleTemplate: config.titleTemplate, titleText: config.titleText,
+        descText: config.descText, logoPath: config.logoPath,
+        speed: config.speed, srtPath: config.srtPath,
+    }, null, 2))
+    console.log('VF:', vf || '(none)')
+    console.log('AF:', af || '(none)')
+    console.log('ComplexFilter:', complexFilter || '(none)')
+    console.log('ExtraInputs:', extraInputs)
+    console.log('NeedsMapping:', needsMapping)
+    console.log('═══════════════════════════════════════')
+
     const args: string[] = ['-y', '-i', inputPath]
     for (const inp of extraInputs) args.push('-i', inp)
     if (complexFilter) {
@@ -157,6 +179,8 @@ async function processVideo(inputPath: string, outputDir: string, config: ReupCo
 
     if (useGpu) args.push('-c:v', 'h264_nvenc', '-preset', 'p2', '-cq', '23')
     else args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23')
+
+    console.log('FFmpeg CMD:', ['ffmpeg', ...args, outPath].join(' '))
 
     args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-loglevel', 'error', outPath)
     await runFF(args)
