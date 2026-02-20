@@ -149,9 +149,10 @@ export function buildFilterChain(config: ReupConfig): {
         vFilters.push(`rotate=${rad}:c=none`)
     }
 
-    // L5: Lens Distortion
+    // L5: Lens Distortion — CSS preview: perspective(500px) rotateY(2deg) → rất rõ
+    // FFmpeg: tăng k1/k2 để visible (k1=-0.18 barrel distortion rõ, k2=-0.08 pincushion)
     if (config.lensDistortion) {
-        vFilters.push('lenscorrection=cx=0.5:cy=0.5:k1=-0.05:k2=-0.03')
+        vFilters.push('lenscorrection=cx=0.5:cy=0.5:k1=-0.18:k2=-0.08')
     }
 
     // L6: HDR
@@ -175,9 +176,11 @@ export function buildFilterChain(config: ReupConfig): {
             'unsharp=13:13:1.8:13:13:0.0'
         )
     }
-    // Zoom Effect — crop center (KHÔNG dùng zoompan! s=iw*2:ih*2 lỗi Invalid argument)
+    // Zoom Effect — crop center mạnh hơn (CSS preview: scale animation rất rõ)
     if (config.zoomEffect && config.zoomIntensity && config.zoomIntensity > 1.0) {
-        const cropRatio = (1 / config.zoomIntensity).toFixed(4)
+        // Tăng cropRatio mạnh hơn gấp 1.3x để match CSS preview
+        const boostedZoom = config.zoomIntensity * 1.3
+        const cropRatio = (1 / boostedZoom).toFixed(4)
         vFilters.push(
             `crop=iw*${cropRatio}:ih*${cropRatio}:(iw-ow)/2:(ih-oh)/2`
         )
