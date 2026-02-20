@@ -509,6 +509,15 @@ async function exportVideo() {
     titleTemplate: titleTemplate.value,
     titleText: titleText.value,
     descText: descText.value,
+    // Text styling
+    textFont: textFont.value,
+    titleFontSize: titleFontSize.value,
+    descFontSize: descFontSize.value,
+    textColor: textColor.value,
+    titleOffsetX: titleOffsetX.value,
+    titleOffsetY: titleOffsetY.value,
+    descOffsetX: descOffsetX.value,
+    descOffsetY: descOffsetY.value,
     // Logo
     logoPath: logoPath.value,
     logoPosition: logoPosition.value,

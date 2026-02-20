@@ -42,11 +42,20 @@ export interface ReupConfig {
     logoPosition?: string
     logoSize?: number
     // Reframe (scale X/Y/Z + position)
-    reframeZoom?: number     // 50-300, default 100
-    reframeScaleX?: number   // 50-200, default 100
-    reframeScaleY?: number   // 50-200, default 100
-    reframePosX?: number     // px offset, default 0
-    reframePosY?: number     // px offset, default 0
+    reframeZoom?: number
+    reframeScaleX?: number
+    reframeScaleY?: number
+    reframePosX?: number
+    reframePosY?: number
+    // Text styling
+    textFont?: string         // e.g. 'Inter', 'Arial', 'Georgia'
+    titleFontSize?: number    // px in preview (will be scaled for 1080p)
+    descFontSize?: number
+    textColor?: string        // hex color e.g. '#ffffff'
+    titleOffsetX?: number     // px offset
+    titleOffsetY?: number
+    descOffsetX?: number
+    descOffsetY?: number
 }
 
 /** Color grading FFmpeg filter strings */
@@ -293,21 +302,75 @@ export function buildFilterChain(config: ReupConfig): {
     const hasDesc = config.descText && config.descText.trim()
     if ((config.titleTemplate && config.titleTemplate !== 'none') || hasTitle || hasDesc) {
         const esc = (t: string) => t
+            .replace(/\\/g, '/')          // backslash → forward (Windows path safe)
             .replace(/:/g, '\\:')
             .replace(/'/g, "\\'")
             .replace(/,/g, '\\,')
             .replace(/%/g, '%%')
-        const fontPath = 'C\\:/Windows/Fonts/arialbd.ttf'
+
+        // Map CSS font name → Windows font file
+        const fontMap: Record<string, string> = {
+            'Inter': 'C\\\\:/Windows/Fonts/arial.ttf',
+            'Arial': 'C\\\\:/Windows/Fonts/arial.ttf',
+            'Arial Bold': 'C\\\\:/Windows/Fonts/arialbd.ttf',
+            'Georgia': 'C\\\\:/Windows/Fonts/georgia.ttf',
+            'Times New Roman': 'C\\\\:/Windows/Fonts/times.ttf',
+            'Courier New': 'C\\\\:/Windows/Fonts/cour.ttf',
+            'Verdana': 'C\\\\:/Windows/Fonts/verdana.ttf',
+            'Impact': 'C\\\\:/Windows/Fonts/impact.ttf',
+            'Tahoma': 'C\\\\:/Windows/Fonts/tahoma.ttf',
+        }
+        const userFont = config.textFont || 'Inter'
+        const fontPath = fontMap[userFont] || fontMap['Inter']
+
+        // Scale font size: preview px → 1080p output (preview ~360px wide → output 1080px)
+        const previewScale = 3 // 1080 / ~360px preview width
+        const titleSize = Math.round((config.titleFontSize || 24) * previewScale)
+        const descSize = Math.round((config.descFontSize || 14) * previewScale)
+
+        // Text color
+        const fontcolor = config.textColor || '#ffffff'
+
+        // Position with user offset
+        const titleOX = config.titleOffsetX || 0
+        const titleOY = config.titleOffsetY || 0
+        const descOX = config.descOffsetX || 0
+        const descOY = config.descOffsetY || 0
+
+        // Word-wrap: split long text into lines of ~25 chars for 1080px width
+        const wrapText = (text: string, maxChars: number): string[] => {
+            const words = text.split(/\s+/)
+            const lines: string[] = []
+            let current = ''
+            for (const word of words) {
+                if ((current + ' ' + word).trim().length > maxChars && current) {
+                    lines.push(current.trim())
+                    current = word
+                } else {
+                    current = current ? current + ' ' + word : word
+                }
+            }
+            if (current.trim()) lines.push(current.trim())
+            return lines
+        }
 
         if (config.titleText) {
-            vFilters.push(
-                `drawtext=fontfile='${fontPath}':text='${esc(config.titleText)}':x=(w-text_w)/2:y=200:fontsize=60:fontcolor=white:borderw=5:bordercolor=black`
-            )
+            const lines = wrapText(config.titleText, 25)
+            // Draw each line separately for word-wrap
+            lines.forEach((line, i) => {
+                const yPos = 150 + titleOY * previewScale + i * (titleSize + 10)
+                vFilters.push(
+                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${titleOX * previewScale}:y=${yPos}:fontsize=${titleSize}:fontcolor=${fontcolor}:borderw=5:bordercolor=black:shadowx=2:shadowy=2:shadowcolor=black@0.6`
+                )
+            })
         }
         if (config.descText) {
-            vFilters.push(
-                `drawtext=fontfile='${fontPath}':text='${esc(config.descText)}':x=(w-text_w)/2:y=h-th-200:fontsize=48:fontcolor=white:borderw=4:bordercolor=black`
-            )
+            const lines = wrapText(config.descText, 30)
+            lines.forEach((line, i) => {
+                vFilters.push(
+                    `drawtext=fontfile='${fontPath}':text='${esc(line)}':x=(w-text_w)/2+${descOX * previewScale}:y=h-${200 + descOY * previewScale}-th-${(lines.length - 1 - i) * (descSize + 8)}:fontsize=${descSize}:fontcolor=${fontcolor}:borderw=4:bordercolor=black:shadowx=1:shadowy=1:shadowcolor=black@0.5`
+                )
+            })
         }
     }
 
