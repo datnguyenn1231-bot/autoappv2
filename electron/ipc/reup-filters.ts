@@ -168,11 +168,11 @@ export function buildFilterChain(config: ReupConfig): {
         if (cgFilter) vFilters.push(cgFilter)
     }
 
-    // Glow/Bloom — dùng unsharp thay vì split/blend (split/blend cần filter_complex)
+    // Glow/Bloom — tăng cường cho match CSS preview (drop-shadow(0 0 8px rgba(255,200,100,0.35)))
     if (config.glow) {
         vFilters.push(
-            'eq=brightness=0.06:contrast=1.05',
-            'unsharp=9:9:1.2:9:9:0.0'
+            'eq=brightness=0.10:contrast=1.08',
+            'unsharp=13:13:1.8:13:13:0.0'
         )
     }
     // Zoom Effect — crop center (KHÔNG dùng zoompan! s=iw*2:ih*2 lỗi Invalid argument)
@@ -203,23 +203,24 @@ export function buildFilterChain(config: ReupConfig): {
         }
     }
 
-    // Pixel Enlarge
+    // Pixel Enlarge — scale 3x neighbor rồi scale lại (CSS preview: blur(0.4px) contrast(1.12))
     if (config.pixelEnlarge) {
         vFilters.push(
-            'scale=iw*2:ih*2:flags=neighbor',
-            'scale=trunc(iw/4)*2:trunc(ih/4)*2:flags=lanczos'
+            'scale=iw*3:ih*3:flags=neighbor',
+            'scale=trunc(iw/6)*2:trunc(ih/6)*2:flags=lanczos'
         )
     }
 
-    // RGB Drift
+    // RGB Drift — CSS preview: drop-shadow(3px 0 rgb(255,0,0,0.5)) → 3px offset rõ ràng
     if (config.rgbDrift) {
-        vFilters.push('rgbashift=rh=1:rv=-1:gh=0:gv=0:bh=-1:bv=1')
+        vFilters.push('rgbashift=rh=3:rv=-2:gh=0:gv=0:bh=-3:bv=2')
     }
 
-    // ChromaShuffle
+    // ChromaShuffle — CSS preview: hue-rotate(12deg) saturate(1.25) → rõ ràng hơn
     if (config.chromaShuffle) {
         vFilters.push(
-            'colorchannelmixer=rr=0.98:rg=0.01:rb=0.01:gr=0.01:gg=0.98:gb=0.01:br=0.01:bg=0.01:bb=0.98'
+            'colorchannelmixer=rr=0.90:rg=0.06:rb=0.04:gr=0.04:gg=0.90:gb=0.06:br=0.06:bg=0.04:bb=0.90',
+            'eq=saturation=1.25'
         )
     }
 
